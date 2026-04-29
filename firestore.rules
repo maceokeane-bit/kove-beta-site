@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /contactSubmissions/{submissionId} {
+      allow create: if
+        request.resource.data.keys().hasOnly(["name", "email", "message", "source", "createdAt"]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() > 0 &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() > 0 &&
+        request.resource.data.source == "kove-campus-beta-page";
+
+      allow read, update, delete: if false;
+    }
+  }
+}
