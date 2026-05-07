@@ -94,17 +94,17 @@ export default function App() {
       <header className="hero">
         <div className="hero-copy">
           <span className="hero-pill">WWU students: beta testers wanted</span>
-          <h1>Kove is looking for Western student beta testers. Free through September.</h1>
+          <h1>Join the Kove beta. Free for WWU students through August.</h1>
           <p className="hero-text">
             Kove is looking for students to test a money app that helps you track
             spending, build a budget, and actually understand where your money goes.
-            Access is free through September.
+            Access is free through August.
           </p>
 
           <div className="hero-code-card">
-            <span className="code-label">Beta code</span>
+            <span className="code-label">Access code</span>
             <strong>{betaCode}</strong>
-            <p>Best redeemed on a computer during beta setup.</p>
+            <p>Redeem this code on a computer at KoveBeta.com</p>
           </div>
 
           <div className="hero-actions">
@@ -120,7 +120,7 @@ export default function App() {
         <div className="hero-panel">
           <div className="hero-panel-top">
             <span className="panel-kicker">What you get in beta</span>
-            <span className="panel-badge">Free through September</span>
+            <span className="panel-badge">Free through August</span>
           </div>
           <ul className="feature-list">
             <li>Track spending without spreadsheets</li>
