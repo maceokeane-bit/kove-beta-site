@@ -77,6 +77,7 @@ export default function App() {
         type: "success",
         message: "Question sent. We will get back to you soon.",
       });
+      setTimeout(() => setStatus({ type: "idle", message: "" }), 2000);
     } catch (error) {
       setStatus({
         type: "error",

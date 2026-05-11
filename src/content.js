@@ -64,7 +64,7 @@ export const faqItems = [
   {
     question: "Is it really free?",
     answer:
-      "Yes. Beta access is free through August for students using this campus code, for up to 230 students total.",
+      "Yes. Beta access is free through August for students using this campus code, for up to 180 students total.",
   },
   {
     question: "What happens when the beta period ends?",
