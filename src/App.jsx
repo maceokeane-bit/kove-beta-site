@@ -1,7 +1,58 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, hasFirebaseConfig } from "./firebase";
-import { betaCode, betaUrl, faqItems, infoCards, marketingUrl } from "./content";
+import {
+  accessCode,
+  appStoreUrl,
+  codeConnections,
+  codeExpires,
+  codeSpots,
+  detectPlatform,
+  faqItems,
+  features,
+  marketingUrl,
+  openAppHref,
+  playStoreUrl,
+  privacyUrl,
+  steps,
+  webAppUrl,
+} from "./content";
+
+const platform = detectPlatform();
+
+// Official badges, unmodified, both at the same height (Google's badge rules).
+const storeBadges = [
+  {
+    key: "ios",
+    href: appStoreUrl,
+    src: "/images/app-store.svg",
+    alt: "Download on the App Store",
+    width: 120,
+    height: 40,
+  },
+  {
+    key: "android",
+    href: playStoreUrl,
+    src: "/images/google-play.png",
+    alt: "Get it on Google Play",
+    width: 564,
+    height: 168,
+  },
+];
+
+function StoreButtons() {
+  // Put the visitor's own store first.
+  const ordered = platform === "android" ? [...storeBadges].reverse() : storeBadges;
+  return (
+    <div className="store-buttons">
+      {ordered.map((badge) => (
+        <a key={badge.key} href={badge.href} target="_blank" rel="noopener noreferrer">
+          <img src={badge.src} alt={badge.alt} width={badge.width} height={badge.height} />
+        </a>
+      ))}
+    </div>
+  );
+}
 
 function SectionHeading({ eyebrow, title, text }) {
   return (
@@ -13,15 +64,91 @@ function SectionHeading({ eyebrow, title, text }) {
   );
 }
 
+function CopyIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+// The Clipboard API can be missing or blocked (older browsers, in-app QR
+// scanner browsers), so fall back to the legacy copy command.
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const ok = document.execCommand("copy");
+    field.remove();
+    return ok;
+  }
+}
+
+function CodeCard() {
+  const [copyState, setCopyState] = useState("idle");
+  const codeRef = useRef(null);
+
+  const handleCopy = async () => {
+    if (await copyText(accessCode)) {
+      setCopyState("copied");
+    } else {
+      // Select the code so it's one tap from the system copy menu.
+      window.getSelection()?.selectAllChildren(codeRef.current);
+      setCopyState("manual");
+    }
+    setTimeout(() => setCopyState("idle"), 2500);
+  };
+  const copied = copyState === "copied";
+
+  return (
+    <div className="code-card">
+      <span className="code-label">WWU access code</span>
+      <div className="code-row">
+        <strong className="code-value" ref={codeRef}>
+          {accessCode}
+        </strong>
+        <button className="copy-button" type="button" onClick={handleCopy} aria-label={`Copy code ${accessCode}`}>
+          {copied ? <CheckIcon /> : <CopyIcon />}
+          <span>{copied ? "Copied" : "Copy"}</span>
+        </button>
+      </div>
+      <p className="copy-status" role="status">
+        {copyState === "manual" ? "Code selected. Tap Copy in your phone's menu." : ""}
+      </p>
+      <p className="code-offer">
+        Free for the <strong>first {codeSpots} students</strong>
+      </p>
+      <ul className="code-details">
+        <li>Full access through {codeExpires}</li>
+        <li>Every feature, up to {codeConnections} connected banks</li>
+        <li>No card needed, nothing charged when it ends</li>
+        <li>Code fully used? Student plans start at $1.99/mo</li>
+      </ul>
+    </div>
+  );
+}
+
 function FaqItem({ item, isOpen, onToggle }) {
   return (
     <article className={`faq-item ${isOpen ? "is-open" : ""}`}>
-      <button
-        className="faq-trigger"
-        type="button"
-        aria-expanded={isOpen}
-        onClick={onToggle}
-      >
+      <button className="faq-trigger" type="button" aria-expanded={isOpen} onClick={onToggle}>
         <span>{item.question}</span>
         <span className="faq-icon" aria-hidden="true">
           {isOpen ? "−" : "+"}
@@ -38,8 +165,7 @@ const initialFormState = {
   message: "",
 };
 
-export default function App() {
-  const [openFaq, setOpenFaq] = useState(0);
+function ContactForm() {
   const [formValues, setFormValues] = useState(initialFormState);
   const [status, setStatus] = useState({ type: "idle", message: "" });
 
@@ -57,8 +183,7 @@ export default function App() {
     if (!hasFirebaseConfig || !db) {
       setStatus({
         type: "error",
-        message:
-          "The contact form is not connected yet. Add your Firebase config to enable submissions.",
+        message: "The contact form isn't connected right now. Please try again later.",
       });
       return;
     }
@@ -75,210 +200,222 @@ export default function App() {
       setFormValues(initialFormState);
       setStatus({
         type: "success",
-        message: "Question sent. We will get back to you soon.",
+        message: "Question sent. We'll get back to you soon.",
       });
-      setTimeout(() => setStatus({ type: "idle", message: "" }), 2000);
+      setTimeout(() => setStatus({ type: "idle", message: "" }), 4000);
     } catch (error) {
       setStatus({
         type: "error",
-        message:
-          "Something went wrong while sending your question. Please try again in a bit.",
+        message: "Something went wrong sending your question. Please try again in a bit.",
       });
     }
   };
 
   return (
-    <div className="page-shell">
-      <div className="ambient ambient-left" />
-      <div className="ambient ambient-right" />
+    <form className="contact-form" onSubmit={handleSubmit}>
+      <label>
+        Name
+        <input autoComplete="name" name="name" onChange={handleChange} placeholder="Your name" required type="text" value={formValues.name} />
+      </label>
 
-      <header className="hero">
-        <div className="hero-copy">
-          <span className="hero-pill">WWU students: beta testers wanted</span>
-          <h1>Join the Kove beta. Free for WWU students through August.</h1>
-          <p className="hero-text">
-            Kove is looking for students to test a money app that helps you track
-            spending, build a budget, and actually understand where your money goes.
-            Access is free through August.
-          </p>
+      <label>
+        Email
+        <input autoComplete="email" name="email" onChange={handleChange} placeholder="you@wwu.edu" required type="email" value={formValues.email} />
+      </label>
 
-          <div className="hero-code-card">
-            <span className="code-label">Access code</span>
-            <strong>{betaCode}</strong>
-            <p>Redeem this code on a computer at KoveBeta.com</p>
-          </div>
+      <label>
+        Message
+        <textarea name="message" onChange={handleChange} placeholder="Ask us anything about Kove or the code." required rows="4" value={formValues.message} />
+      </label>
 
-          <div className="hero-actions">
-            <a className="button button-primary" href={betaUrl} target="_blank" rel="noreferrer">
-              Open Kove Beta
-            </a>
-            <a className="button button-secondary" href={marketingUrl} target="_blank" rel="noreferrer">
-              Main website
-            </a>
-          </div>
-        </div>
+      <button className="button button-primary" disabled={status.type === "pending"} type="submit">
+        {status.type === "pending" ? "Sending..." : "Send question"}
+      </button>
 
-        <div className="hero-panel">
-          <div className="hero-panel-top">
-            <span className="panel-kicker">What you get in beta</span>
-            <span className="panel-badge">Free through August</span>
-          </div>
-          <ul className="feature-list">
-            <li>Track spending without spreadsheets</li>
-            <li>See category breakdowns and cash flow</li>
-            <li>Use KoveAI to make sense of your spending</li>
-            <li>Set savings goals and watch progress build</li>
-          </ul>
-          <div className="trust-grid">
-            <div>
-              <span>Privacy</span>
-              <strong>No data selling</strong>
-            </div>
-            <div>
-              <span>Built by</span>
-              <strong>Maceo, a student at WWU</strong>
-            </div>
-            <div>
-              <span>Account linking</span>
-              <strong>Plaid</strong>
-            </div>
-            <div>
-              <span>Best on</span>
-              <strong>Desktop during beta</strong>
-            </div>
-          </div>
+      {status.type !== "idle" ? (
+        <p className={`form-status form-status-${status.type}`} role="status">
+          {status.message}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+export default function App() {
+  const [openFaq, setOpenFaq] = useState(0);
+  const openHref = openAppHref(platform);
+  const openIsWeb = platform === "desktop";
+
+  return (
+    <div className="page">
+      <header className="topbar">
+        <div className="container topbar-inner">
+          <a className="brand" href={marketingUrl} target="_blank" rel="noreferrer">
+            <img src="/images/logo.png" alt="" width="32" height="32" />
+            <span>Kove</span>
+          </a>
+          <a className="topbar-code" href="#code">
+            WWU code <strong>{accessCode}</strong>
+          </a>
         </div>
       </header>
 
       <main>
-        <section className="info-section">
-          <SectionHeading
-            eyebrow="Why students are trying it"
-            title="Short version: it is free, convenient, and secure."
-            text="Everything here is meant to be easy to scan on your phone."
-          />
+        <section className="hero">
+          <div className="container hero-grid">
+            <div className="hero-copy">
+              <span className="hero-pill">Free for the first {codeSpots} WWU students</span>
+              <h1>Finally, a budgeting app that&rsquo;s actually on your side.</h1>
+              <p className="hero-text">Track spending, budgets, and goals in one place. No data selling, no investors.</p>
+            </div>
 
-          <div className="info-grid">
-            {infoCards.map((card) => (
-              <article className="info-card" key={card.title}>
-                <span className="card-eyebrow">{card.eyebrow}</span>
-                <h3>{card.title}</h3>
-                <p>{card.body}</p>
-              </article>
-            ))}
+            <div className="hero-visual">
+              <img
+                src="/images/hero-phones.webp"
+                alt="Kove on two iPhones: the Spending screen in dark mode showing October spending by category, and the Home screen showing $1,196 left in the October budget"
+                width="1400"
+                height="1901"
+                fetchPriority="high"
+              />
+              <div className="hero-qr">
+                <div className="hero-qr-code">
+                  <img src="/images/app-download.svg" alt="QR code to download the Kove app from the App Store or Google Play" width="33" height="33" />
+                  <span className="hero-qr-logo">
+                    <img src="/images/logo.png" alt="" width="48" height="48" />
+                  </span>
+                </div>
+                <p>Scan to get the app</p>
+              </div>
+            </div>
+
+            <div className="hero-actions">
+              <StoreButtons />
+              <a className="text-link" href={webAppUrl} target="_blank" rel="noreferrer">
+                Or use Kove on the web &rarr;
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="code-section" id="code">
+          <div className="container code-grid">
+            <div className="code-copy">
+              <span className="section-eyebrow">Your access code</span>
+              <h2>Get Kove free with this code.</h2>
+              <p>
+                The first {codeSpots} WWU students who enter it get full access. After that the code stops working, but Kove is still
+                yours on a student plan starting at $1.99/mo.
+              </p>
+            </div>
+            <CodeCard />
+          </div>
+        </section>
+
+        <section className="founder-section">
+          <div className="container narrow founder-copy">
+            <span className="section-eyebrow">Made at Western</span>
+            <h2>Built by a WWU student.</h2>
+            <p>
+              Kove was started by a student here at Western. That&rsquo;s why these {codeSpots} free spots go to WWU students first,
+              and why <a href="#contact">the form below</a> reaches us directly.
+            </p>
+          </div>
+        </section>
+
+        <section className="steps-section">
+          <div className="container">
+            <SectionHeading eyebrow="How it works" title="Redeem your code in 3 steps." text="Same steps on iPhone, Android, and the web." />
+            <ol className="steps">
+              {steps.map((step, index) => (
+                <li className="step" key={step.title}>
+                  <span className="step-number">{index + 1}</span>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p>{step.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="steps-cta">
+              <a
+                className="button button-primary"
+                href={openHref}
+                {...(openIsWeb ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              >
+                {openIsWeb ? "Open Kove on the web" : "Open Kove"}
+              </a>
+              <p>{openIsWeb ? "Or scan the QR code above to get the app on your phone." : "Opens the app, or its store page if you don't have it yet."}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="features-section">
+          <div className="container">
+            <SectionHeading eyebrow="What you get" title="Everything you need, nothing you don't." />
+            <div className="features">
+              {features.map((feature) => (
+                <article className="feature" key={feature.eyebrow}>
+                  <div className="feature-copy">
+                    <span className="section-eyebrow">{feature.eyebrow}</span>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.body}</p>
+                  </div>
+                  <div className="feature-shot">
+                    <img src={feature.src} alt={feature.alt} width={feature.width} height={feature.height} loading="lazy" />
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
         <section className="faq-section">
-          <SectionHeading
-            eyebrow="FAQ"
-            title="Quick answers before you open the beta."
-            text="Tap a question to expand it."
-          />
-
-          <div className="faq-list">
-            {faqItems.map((item, index) => (
-              <FaqItem
-                item={item}
-                key={item.question}
-                isOpen={openFaq === index}
-                onToggle={() => setOpenFaq(openFaq === index ? -1 : index)}
-              />
-            ))}
+          <div className="container narrow">
+            <SectionHeading eyebrow="FAQ" title="Quick answers." />
+            <div className="faq-list">
+              {faqItems.map((item, index) => (
+                <FaqItem
+                  item={item}
+                  key={item.question}
+                  isOpen={openFaq === index}
+                  onToggle={() => setOpenFaq(openFaq === index ? -1 : index)}
+                />
+              ))}
+            </div>
           </div>
         </section>
 
-        <section className="website-section">
-          <div className="website-copy">
-            <span className="section-eyebrow">Want the bigger picture?</span>
-            <h2>Check out the full Kove website.</h2>
-            <p>See the broader product story, company background, and more about what Kove is building.</p>
+        <section className="contact-section" id="contact">
+          <div className="container narrow">
+            <SectionHeading eyebrow="Questions?" title="Send us a note." text="This goes straight to our team." />
+            <ContactForm />
           </div>
-          <a className="button button-secondary" href={marketingUrl} target="_blank" rel="noreferrer">
-            Visit KoveFinance.com
-          </a>
         </section>
 
-        <section className="contact-section">
-          <SectionHeading
-            eyebrow="Questions?"
-            title="Send a note."
-            text="This form goes straight to the Kove team."
-          />
-
-          <form className="contact-form" onSubmit={handleSubmit}>
-            <label>
-              Name
-              <input
-                autoComplete="name"
-                name="name"
-                onChange={handleChange}
-                placeholder="Your name"
-                required
-                type="text"
-                value={formValues.name}
-              />
-            </label>
-
-            <label>
-              Email
-              <input
-                autoComplete="email"
-                name="email"
-                onChange={handleChange}
-                placeholder="you@school.edu"
-                required
-                type="email"
-                value={formValues.email}
-              />
-            </label>
-
-            <label>
-              Message
-              <textarea
-                name="message"
-                onChange={handleChange}
-                placeholder="Ask anything about the beta."
-                required
-                rows="5"
-                value={formValues.message}
-              />
-            </label>
-
-            <button className="button button-primary" disabled={status.type === "pending"} type="submit">
-              {status.type === "pending" ? "Sending..." : "Send question"}
-            </button>
-
-            {status.type !== "idle" ? (
-              <p className={`form-status form-status-${status.type}`}>{status.message}</p>
-            ) : null}
-          </form>
-        </section>
-
-        <section className="access-strip" aria-label="Beta access reminder">
-          <div>
-            <span className="section-eyebrow">Ready to try it?</span>
-            <h2>Use code {betaCode} and open the beta on a computer.</h2>
-            <p>Same code as the poster. Open the beta, redeem it during signup, and start exploring.</p>
+        <section className="final-cta">
+          <div className="container narrow">
+            <h2>Ready when you are.</h2>
+            <p>
+              Get the app, then enter <strong>{accessCode}</strong> in Settings, Access Program.
+            </p>
+            <StoreButtons />
           </div>
-          <a className="button button-primary" href={betaUrl} target="_blank" rel="noreferrer">
-            Go to Kove Beta
-          </a>
         </section>
       </main>
 
       <footer className="site-footer">
-        <div>
-          <strong>Kove</strong>
-          <p>A product of Keane Financials LLC.</p>
-        </div>
-        <div className="footer-links">
-          <a href={marketingUrl} target="_blank" rel="noreferrer">
-            KoveFinance.com
-          </a>
-          <a href={betaUrl} target="_blank" rel="noreferrer">
-            KoveBeta.com
-          </a>
+        <div className="container footer-inner">
+          <p>
+            Kove is a product of Keane Financials LLC. Not affiliated with Western Washington University.
+          </p>
+          <div className="footer-links">
+            <a href={marketingUrl} target="_blank" rel="noreferrer">
+              kovefinance.com
+            </a>
+            <a href={privacyUrl} target="_blank" rel="noreferrer">
+              Privacy
+            </a>
+          </div>
         </div>
       </footer>
     </div>
