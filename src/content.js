@@ -29,6 +29,39 @@ export function detectPlatform() {
   return "desktop";
 }
 
+// Poster design the visitor scanned (set by the script in index.html), or null.
+export const posterDesign = (() => {
+  try {
+    return sessionStorage.getItem("kovePosterDesign");
+  } catch {
+    return null;
+  }
+})();
+
+// Store links tagged with the poster design, so App Store Connect (Sources,
+// Campaigns) and Play Console (acquisition by campaign) count downloads per
+// design. The Apple provider token comes from App Store Connect's campaign links.
+const applePt = "129398714";
+
+export function appStoreHref(design = posterDesign) {
+  if (!design) return appStoreUrl;
+  const ct = encodeURIComponent(`WWU campus poster ${design}`);
+  return `https://apps.apple.com/app/apple-store/id6808136959?pt=${applePt}&ct=${ct}&mt=8`;
+}
+
+export function playStoreHref(design = posterDesign) {
+  if (!design) return playStoreUrl;
+  const referrer = `utm_source=wwu_poster&utm_medium=qr&utm_campaign=wwu_campus_poster_${design}`;
+  return `${playStoreUrl}&referrer=${encodeURIComponent(referrer)}`;
+}
+
+/** Sends a Google Analytics event when the tag is on the page. */
+export function track(name, params = {}) {
+  if (typeof window.gtag === "function") {
+    window.gtag("event", name, { poster_design: posterDesign ?? "none", ...params });
+  }
+}
+
 export function openAppHref(platform) {
   if (platform === "ios") return iosOpenUrl;
   if (platform === "android") return androidOpenUrl;

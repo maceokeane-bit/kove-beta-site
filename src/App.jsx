@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, hasFirebaseConfig } from "./firebase";
 import {
   accessCode,
-  appStoreUrl,
+  appStoreHref,
   codeConnections,
   codeExpires,
   codeSpots,
@@ -12,9 +12,10 @@ import {
   features,
   marketingUrl,
   openAppHref,
-  playStoreUrl,
+  playStoreHref,
   privacyUrl,
   steps,
+  track,
   webAppUrl,
 } from "./content";
 
@@ -24,7 +25,7 @@ const platform = detectPlatform();
 const storeBadges = [
   {
     key: "ios",
-    href: appStoreUrl,
+    href: appStoreHref(),
     src: "/images/app-store.svg",
     alt: "Download on the App Store",
     width: 120,
@@ -32,7 +33,7 @@ const storeBadges = [
   },
   {
     key: "android",
-    href: playStoreUrl,
+    href: playStoreHref(),
     src: "/images/google-play.png",
     alt: "Get it on Google Play",
     width: 564,
@@ -46,11 +47,57 @@ function StoreButtons() {
   return (
     <div className="store-buttons">
       {ordered.map((badge) => (
-        <a key={badge.key} href={badge.href} target="_blank" rel="noopener noreferrer">
+        <a
+          key={badge.key}
+          href={badge.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track("store_click", { store: badge.key })}
+        >
           <img src={badge.src} alt={badge.alt} width={badge.width} height={badge.height} />
         </a>
       ))}
     </div>
+  );
+}
+
+/**
+ * /get, the "Get the app" poster QR. Logs the scan, then sends the phone to its
+ * store (tagged with the poster design) or a computer to the web app. Waits for
+ * the Google tag to confirm the hit, with a timeout so nobody gets stuck.
+ */
+function GetApp() {
+  const destination =
+    platform === "ios" ? appStoreHref() : platform === "android" ? playStoreHref() : webAppUrl;
+
+  useEffect(() => {
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      window.location.replace(destination);
+    };
+    track("get_app_scan", { platform, event_callback: go, event_timeout: 1500 });
+    const fallback = setTimeout(go, 1800);
+    return () => clearTimeout(fallback);
+  }, [destination]);
+
+  const storeName = platform === "ios" ? "the App Store" : platform === "android" ? "Google Play" : "Kove";
+
+  return (
+    <main className="get-app">
+      <img src="/images/logo.png" alt="" width="64" height="64" />
+      <h1>Opening {storeName}...</h1>
+      <p>
+        Once Kove is installed, enter code <strong>{accessCode}</strong> in Settings, Access Program.
+      </p>
+      <a className="button button-primary" href={destination}>
+        Continue to {storeName}
+      </a>
+      <a className="text-link" href="/">
+        Learn more about Kove
+      </a>
+    </main>
   );
 }
 
@@ -241,7 +288,13 @@ function ContactForm() {
   );
 }
 
+const isGetAppRoute = window.location.pathname.replace(/\/+$/, "") === "/get";
+
 export default function App() {
+  return isGetAppRoute ? <GetApp /> : <LandingPage />;
+}
+
+function LandingPage() {
   const [openFaq, setOpenFaq] = useState(0);
   const openHref = openAppHref(platform);
   const openIsWeb = platform === "desktop";
@@ -340,6 +393,7 @@ export default function App() {
               <a
                 className="button button-primary"
                 href={openHref}
+                onClick={() => track("open_kove_click", { platform })}
                 {...(openIsWeb ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               >
                 {openIsWeb ? "Open Kove on the web" : "Open Kove"}

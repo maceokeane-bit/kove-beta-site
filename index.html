@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Poster QR codes link to /?p=N ("Learn more") and /get?p=N ("Get the
+         app"), where N is the poster design. Short links keep the QR codes
+         simple; this expands them into UTM tags before the Google tag reads
+         the URL, so Analytics reports each design as its own campaign. -->
+    <script>
+      (function () {
+        var url = new URL(location.href);
+        var design = url.searchParams.get("p");
+        if (!design || !/^[0-9]{1,2}$/.test(design)) return;
+        var getApp = url.pathname.replace(/\/+$/, "") === "/get";
+        url.searchParams.delete("p");
+        url.searchParams.set("utm_source", "wwu_poster");
+        url.searchParams.set("utm_medium", getApp ? "qr_get_app" : "qr_learn_more");
+        url.searchParams.set("utm_campaign", "wwu_campus_poster_" + design);
+        history.replaceState(null, "", url);
+        // Remembered for the session so store links on the page carry it too.
+        try { sessionStorage.setItem("kovePosterDesign", design); } catch (e) {}
+      })();
+    </script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-9N56L1KNJL"></script>
     <script>

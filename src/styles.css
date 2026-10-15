@@ -926,3 +926,40 @@ textarea {
     justify-content: space-between;
   }
 }
+
+/* ---------- /get (Get the app QR) ---------- */
+
+.get-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 85% 20%, rgba(20, 166, 166, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 10% 90%, rgba(20, 166, 166, 0.16) 0%, transparent 50%),
+    var(--teal-subtle);
+}
+
+.get-app img {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
+}
+
+.get-app h1 {
+  font-size: 1.75rem;
+}
+
+.get-app p {
+  max-width: 20rem;
+}
+
+.get-app strong {
+  color: var(--heading);
+  letter-spacing: 0.03em;
+}
