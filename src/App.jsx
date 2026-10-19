@@ -120,6 +120,14 @@ function CopyIcon() {
   );
 }
 
+function ChevronIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 function CheckIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -147,6 +155,15 @@ async function copyText(text) {
     return ok;
   }
 }
+
+// Facts match the FAQ in content.js: no card needed, nothing charged at the end.
+const ledger = [
+  ["Free for", `first ${codeSpots} students`],
+  ["Full access through", codeExpires],
+  ["Connected banks", `up to ${codeConnections}`],
+  ["Features", "all of them"],
+  ["Card needed", "none"],
+];
 
 function CodeCard() {
   const [copyState, setCopyState] = useState("idle");
@@ -179,15 +196,21 @@ function CodeCard() {
       <p className="copy-status" role="status">
         {copyState === "manual" ? "Code selected. Tap Copy in your phone's menu." : ""}
       </p>
-      <p className="code-offer">
-        Free for the <strong>first {codeSpots} students</strong>
-      </p>
-      <ul className="code-details">
-        <li>Full access through {codeExpires}</li>
-        <li>Every feature, up to {codeConnections} connected banks</li>
-        <li>No card needed, nothing charged when it ends</li>
-        <li>Code fully used? Student plans start at $1.99/mo</li>
-      </ul>
+      <dl className="code-ledger">
+        {ledger.map(([label, value]) => (
+          <div className="ledger-row" key={label}>
+            <dt>{label}</dt>
+            <span className="ledger-leader" aria-hidden="true" />
+            <dd>{value}</dd>
+          </div>
+        ))}
+        <div className="ledger-row ledger-total">
+          <dt>Charged when it ends</dt>
+          <span className="ledger-leader" aria-hidden="true" />
+          <dd>$0</dd>
+        </div>
+      </dl>
+      <p className="code-note">Code fully used? Student plans start at $1.99/mo.</p>
     </div>
   );
 }
@@ -198,7 +221,7 @@ function FaqItem({ item, isOpen, onToggle }) {
       <button className="faq-trigger" type="button" aria-expanded={isOpen} onClick={onToggle}>
         <span>{item.question}</span>
         <span className="faq-icon" aria-hidden="true">
-          {isOpen ? "−" : "+"}
+          <ChevronIcon />
         </span>
       </button>
       {isOpen ? <p className="faq-answer">{item.answer}</p> : null}
@@ -302,7 +325,7 @@ function LandingPage() {
   return (
     <div className="page">
       <header className="topbar">
-        <div className="container topbar-inner">
+        <div className="topbar-inner glass">
           <a className="brand" href={marketingUrl} target="_blank" rel="noreferrer">
             <img src="/images/logo.png" alt="" width="32" height="32" />
             <span>Kove</span>
@@ -381,7 +404,7 @@ function LandingPage() {
             <ol className="steps">
               {steps.map((step, index) => (
                 <li className="step" key={step.title}>
-                  <span className="step-number">{index + 1}</span>
+                  <span className="step-number">{String(index + 1).padStart(2, "0")}</span>
                   <div>
                     <h3>{step.title}</h3>
                     <p>{step.body}</p>
