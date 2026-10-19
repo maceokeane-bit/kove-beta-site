@@ -90,8 +90,8 @@ export const features = [
     body: "Connect your bank and cards through Plaid. Transactions sort themselves into categories, so you see the month at a glance.",
     src: "/images/spending-trend.webp",
     width: 1000,
-    height: 1208,
-    alt: "Kove spending trend chart for October 2026 showing $2,239 spent, with top categories housing, groceries, utilities, and healthcare",
+    height: 1433,
+    alt: "Kove spending trend chart for October 2026 showing $2,239 spent, $575 less than the same point last month, with top categories housing, groceries, utilities, and healthcare",
   },
   {
     eyebrow: "Budgets",
@@ -99,7 +99,7 @@ export const features = [
     body: "Set a budget for groceries, eating out, or anything else, and Kove tracks it in real time. No spreadsheets.",
     src: "/images/budget-tiles.webp",
     width: 900,
-    height: 837,
+    height: 828,
     alt: "Kove app budget categories showing spending against each budget, like $216 of $570 on groceries",
   },
   {
@@ -108,8 +108,8 @@ export const features = [
     body: "Spring break, a car, next quarter's rent. Pick a target and a date, and watch your progress build.",
     src: "/images/goal-card.webp",
     width: 900,
-    height: 486,
-    alt: "Kove app savings goal for a Mexico trip showing $4,879 saved, the next milestone, and a $300 a month target",
+    height: 409,
+    alt: "Kove app savings goal for a Mexico trip showing $4,879 saved, the next milestone, and $321 a month needed",
   },
 ];
 
